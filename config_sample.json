@@ -1,0 +1,24 @@
+{
+    "cert": "upb-ap.crt",
+    "key": "qkd.key",
+    "cacert": "qkd-ca.crt",
+    "pempassword": "",
+    "locations": [
+        {
+            "name": "Precis",
+            "ipport": "141.85.241.65:12443",
+            "endpoint": "UPB-AP-UPBP"
+        },
+        {
+            "name": "Rectorat",
+            "ipport": "141.85.241.65:11443",
+            "endpoint": "UPB-AP-UPBR"
+        },
+        {
+            "name": "Campus",
+            "ipport": "141.85.241.65:22443",
+            "endpoint": "UPB-AP-UPBC"
+        }
+    ],
+    "myname": "Precis"
+}
