@@ -1,6 +1,12 @@
 import subprocess
 import json
 import platform
+import os
+
+qkdgtk_module_dir = os.path.dirname(__file__)
+
+def get_full_path(relative_path):
+    return os.path.join(qkdgtk_module_dir, relative_path)
 
 def qkd_get_myself():
     with open('config.json') as f:
@@ -25,11 +31,18 @@ def qkd_get_destinations():
 
 def qkd_get_key_custom_params(destination, source, cert_path, key_path, cacert_path, pem_password, type, id=""):
     if type == 'Request':    
-        script_path = './qkd_get_raw.sh'
+        script_path = get_full_path('./qkd_get_raw.sh')
     elif type == 'Response':
-        script_path = './qkd_get_raw_id.sh'
+        script_path = get_full_path('./qkd_get_raw_id.sh')
     else:
         return "Invalid type"
+    
+    if not os.path.isabs(cert_path):
+        cert_path = get_full_path(cert_path)
+    if not os.path.isabs(key_path):
+        key_path = get_full_path(key_path)
+    if not os.path.isabs(cacert_path):
+        cacert_path = get_full_path(cacert_path)
 
     def fix_windows_path(path):
         path = path.replace('\\', '/')
