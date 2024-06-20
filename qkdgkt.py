@@ -88,7 +88,7 @@ def qkd_get_key_custom_params(destination, source, cert_path, key_path, cacert_p
 
         try:
             process = subprocess.Popen([
-                    'bash', 'qkd_get_raw.sh', 
+                    'bash', script_path, 
                     *params
                 ],
                 stdout=subprocess.PIPE,
