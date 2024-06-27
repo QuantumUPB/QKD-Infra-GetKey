@@ -9,19 +9,24 @@ def get_full_path(relative_path):
     return os.path.join(qkdgtk_module_dir, relative_path)
 
 def qkd_get_myself():
-    with open('config.json') as f:
+    with open(get_full_path('config.json')) as f:
         config = json.load(f)
     return config['myname']
 
+def qkd_get_config():
+    with open(get_full_path('config.json')) as f:
+        config = json.load(f)
+    return config
+
 def qkd_get_locations():
-    with open('config.json') as f:
+    with open(get_full_path('config.json')) as f:
         config = json.load(f)
     locations = config['locations']
     locations = [location['name'] for location in locations]
     return locations
 
 def qkd_get_destinations():
-    with open('config.json') as f:
+    with open(get_full_path('config.json')) as f:
         config = json.load(f)
     locations = config['locations']
     locations = [location['name'] for location in locations]
