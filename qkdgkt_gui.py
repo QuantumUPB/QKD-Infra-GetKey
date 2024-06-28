@@ -4,6 +4,8 @@ from PyQt5.QtWidgets import (
     QComboBox, QVBoxLayout, QHBoxLayout, QTextEdit
 )
 from PyQt5.QtGui import QPixmap
+from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QFrame
 
 from copy import deepcopy
 import qkdgkt
@@ -104,14 +106,32 @@ class MyApp(QWidget):
         button_layout.addWidget(self.submit_button)
 
         # About layout - add about text and logo
-        about_label = QLabel('QKDGKT - QKD Get Key Tool')
+        about_label = QLabel('QKD Get Key Tool')
         # make about_label bold
         font = about_label.font()
         font.setBold(True)
         about_label.setFont(font)
         about_layout.addWidget(about_label)
-        about_label_by = QLabel('Implemented by Quantum Team at POLITEHNICA Bucharest (C) 2024')
-        about_layout.addWidget(about_label_by)
+        about_logo_layout = QHBoxLayout()
+        about_label_by = QLabel('© 2024 National University of Science and Technology POLITEHNICA Bucharest')
+        
+        self.line = QFrame()
+        self.line.setFrameShape(QFrame.HLine)
+        self.line.setFrameShadow(QFrame.Sunken)
+        about_layout.addWidget(self.line)
+
+        about_label_logo = QLabel()
+        pixmap = QPixmap('Logo.png').scaled(60,60, Qt.KeepAspectRatio)
+        about_label_logo.setPixmap(pixmap)
+        about_logo_layout.addWidget(about_label_logo)
+        about_logo_layout.addWidget(about_label_by)
+        about_layout.addLayout(about_logo_layout)
+        
+        self.line2 = QFrame()
+        self.line2.setFrameShape(QFrame.HLine)
+        self.line2.setFrameShadow(QFrame.Sunken)
+        about_layout.addWidget(self.line2)
+        
         # add clickable link to the Quantum Team website
         about_label_website = QLabel('<a href="https://quantum.upb.ro/">Visit Website</a>')
         about_label_website.setOpenExternalLinks(True)
@@ -119,11 +139,7 @@ class MyApp(QWidget):
         about_label_github = QLabel('<a href="https://github.com/QuantumUPB/QKD-Infra-GetKey">GitHub Repository</a>')
         about_label_github.setOpenExternalLinks(True)
         about_layout.addWidget(about_label_github)
-        about_label_logo = QLabel()
-        pixmap = QPixmap('Logo.png')
-        about_label_logo.setPixmap(pixmap)
-        about_layout.addWidget(about_label_logo)
-
+        
         # Add form and button layout to main layout
         main_layout.addLayout(form_layout)
         main_layout.addLayout(button_layout)
@@ -138,7 +154,7 @@ class MyApp(QWidget):
         self.setLayout(main_layout)
 
         # Set window properties
-        self.setWindowTitle('QKDGKT - QKD Get Key Tool')
+        self.setWindowTitle('QKD Get Key Tool')
         self.setGeometry(300, 300, 400, 200)
 
         # Initialize the destination dropdown
