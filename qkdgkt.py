@@ -1,11 +1,15 @@
-import subprocess
 import json
-import platform
 import os
+import sys
+import requests
 
-qkdgtk_module_dir = os.path.dirname(__file__)
+if not hasattr(sys, '_MEIPASS'):
+    qkdgtk_module_dir = os.path.dirname(__file__)
+else:
+    qkdgtk_module_dir = os.path.dirname(sys.executable)
 
 def get_full_path(relative_path):
+    # if not inside pyinstaller bundle
     return os.path.join(qkdgtk_module_dir, relative_path)
 
 def qkd_get_myself():
@@ -34,14 +38,7 @@ def qkd_get_destinations():
     locations.remove(myself)
     return locations
 
-def qkd_get_key_custom_params(destination, source, cert_path, key_path, cacert_path, pem_password, type, id=""):
-    if type == 'Request':    
-        script_path = get_full_path('./qkd_get_raw.sh')
-    elif type == 'Response':
-        script_path = get_full_path('./qkd_get_raw_id.sh')
-    else:
-        return "Invalid type"
-    
+def qkd_get_key_custom_params(destination, source, cert_path, key_path, cacert_path, pem_password, type, id=""):    
     if not os.path.isabs(cert_path):
         cert_path = get_full_path(cert_path)
     if not os.path.isabs(key_path):
@@ -49,66 +46,46 @@ def qkd_get_key_custom_params(destination, source, cert_path, key_path, cacert_p
     if not os.path.isabs(cacert_path):
         cacert_path = get_full_path(cacert_path)
 
-    def fix_windows_path(path):
-        path = path.replace('\\', '/')
-        if len(path) > 1 and path[1] == ':':
-            drive_letter = path[0]
-            drive_letter_lower = drive_letter.lower()
-            path = path.replace(f'{drive_letter}:/', f'/mnt/{drive_letter_lower}/')
-        return path
-    
-    if platform.system() == 'Windows':
-        cert_path = fix_windows_path(cert_path)
-        key_path = fix_windows_path(key_path)
-        cacert_path = fix_windows_path(cacert_path)
-        script_path = fix_windows_path(script_path)
+    if type == 'Request':
+        url = f"https://{source}/api/v1/keys/{destination}/enc_keys"
 
-        if type == 'Request':
-            params = [cert_path, key_path, cacert_path, source, destination, pem_password]
-        else:
-            params = [cert_path, key_path, cacert_path, source, destination, pem_password, id]
-
-        try:
-            process = subprocess.Popen([
-                    'wsl', 'bash', script_path, 
-                    *params
-                ],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True
-            )
-            stdout, stderr = process.communicate()
-
-            if process.returncode == 0:
-                result = stdout.strip() 
-            else:
-                result = f"Error: {stderr.strip()}" 
-        except Exception as e:
-            result = f"Exception occurred: {str(e)}"
+        response = requests.get(
+            url,
+            cert=(cert_path, key_path),
+            verify=False,
+            headers={
+                'Content-Type': 'application/json'
+            },
+            data=data_json if type == 'Response' else None
+        )
     else:
-        if type == 'Request':
-            params = [cert_path, key_path, cacert_path, source, destination, pem_password]
-        else:
-            params = [cert_path, key_path, cacert_path, source, destination, pem_password, id]
-
-        try:
-            process = subprocess.Popen([
-                    'bash', script_path, 
-                    *params
-                ],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True
-            )
-            stdout, stderr = process.communicate()
-
-            if process.returncode == 0:
-                result = stdout.strip()
-            else:
-                result = f"Error: {stderr.strip()}"
-        except Exception as e:
-            result = f"Exception occurred: {str(e)}"
+        url = f"https://{source}/api/v1/keys/{destination}/dec_keys"
+        data_payload = {
+            "key_IDs": [
+                {
+                    "key_ID": id
+                }
+            ]
+        }
+        data_json = json.dumps(data_payload)
     
+        response = requests.post(
+            url,
+            cert=(cert_path, key_path),
+            verify=False,
+            headers={
+                'Content-Type': 'application/json'
+            },
+            data=data_json
+        )
+
+    # Check the response
+    if response.status_code == 200:
+        result = response.text
+    else:
+        print(f"Error: {response.status_code}")
+        print(response.text)
+
     # print(result)
     return result
 
