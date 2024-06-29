@@ -39,4 +39,4 @@ This work is designed and implemented by Quantum Team at POLITEHNICA Bucharest. 
 
 If you use this software for research purposes, please follow the instructions in the "Cite this repository" option from the side panel.
 
-The license to this work is TODO.
+This work has been developed within RoNaQCI, part of EuroQCI, DIGITAL-2021-QCI-01-DEPLOY-NATIONAL, 101091562.
