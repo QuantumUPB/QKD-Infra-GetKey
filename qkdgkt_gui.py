@@ -10,6 +10,7 @@ from PyQt5.QtWidgets import QFrame
 from copy import deepcopy
 import qkdgkt
 
+LOCATION_NAMES = qkdgkt.qkd_get_location_names()
 LOCATIONS = qkdgkt.qkd_get_locations()
 
 class MyApp(QWidget):
@@ -67,7 +68,7 @@ class MyApp(QWidget):
         # Dropdowns
         self.source_label = QLabel('Source:')
         self.source_dropdown = QComboBox()
-        self.source_dropdown.addItems(deepcopy(LOCATIONS))
+        self.source_dropdown.addItems(deepcopy(LOCATION_NAMES))
         self.source_dropdown.currentIndexChanged.connect(self.update_destination)
 
         self.destination_label = QLabel('Destination:')
@@ -179,7 +180,7 @@ class MyApp(QWidget):
 
     def update_destination(self):
         source = self.source_dropdown.currentText()
-        options = deepcopy(LOCATIONS)
+        options = deepcopy(LOCATION_NAMES)
         options.remove(source)
 
         self.destination_dropdown.clear()
@@ -187,21 +188,11 @@ class MyApp(QWidget):
 
     def get_destination_endpoint(self):
         destination = self.destination_dropdown.currentText()
-        if destination == 'Precis':
-            return 'UPB-AP-UPBP'
-        elif destination == 'Rectorat':
-            return 'UPB-AP-UPBR'
-        elif destination == 'Campus':
-            return 'UPB-AP-UPBC'
+        return next((loc['endpoint'] for loc in LOCATIONS if loc['name'] == destination), None)
         
     def get_source_endpoint(self):
         source = self.source_dropdown.currentText()
-        if source == 'Precis':
-            return '141.85.241.65:12443'
-        elif source == 'Rectorat':
-            return '141.85.241.65:11443'
-        elif source == 'Campus':
-            return '141.85.241.65:22443'
+        return next((loc['ipport'] for loc in LOCATIONS if loc['name'] == source), None)
 
     def submit_action(self):
         cert_path = self.cert_field.text()

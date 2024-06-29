@@ -12,26 +12,23 @@ def get_full_path(relative_path):
     # if not inside pyinstaller bundle
     return os.path.join(qkdgtk_module_dir, relative_path)
 
-def qkd_get_myself():
-    with open(get_full_path('config.json')) as f:
-        config = json.load(f)
-    return config['myname']
-
 def qkd_get_config():
     with open(get_full_path('config.json')) as f:
         config = json.load(f)
     return config
 
+def qkd_get_myself():
+    return qkd_get_config()['myname']
+
 def qkd_get_locations():
-    with open(get_full_path('config.json')) as f:
-        config = json.load(f)
-    locations = config['locations']
-    locations = [location['name'] for location in locations]
+    return qkd_get_config()['locations']
+
+def qkd_get_location_names():
+    locations = [location['name'] for location in qkd_get_locations()]
     return locations
 
 def qkd_get_destinations():
-    with open(get_full_path('config.json')) as f:
-        config = json.load(f)
+    config = qkd_get_config()
     locations = config['locations']
     locations = [location['name'] for location in locations]
     myself = config['myname']
@@ -90,8 +87,7 @@ def qkd_get_key_custom_params(destination, source, cert_path, key_path, cacert_p
     return result
 
 def qkd_get_key_with_type(destination, type, id=""):
-    with open('config.json') as f:
-        config = json.load(f)
+    config = qkd_get_config()
     
     myself = config['myname']
     locations = config['locations']
