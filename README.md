@@ -35,8 +35,8 @@ When querying for a reponse key, you need to:
 
 # Copyright and license
 
-This work is designed and implemented by Quantum Team at POLITEHNICA Bucharest. All rights reserved, (C) 2024.
+This work has been implemented by Alin-Bogdan Popa and Bogdan-Calin Ciobanu, under the supervision of prof. Pantelimon George Popescu, within the Quantum Team in the Computer Science and Engineering department,Faculty of Automatic Control and Computers, National University of Science and Technology POLITEHNICA Bucharest (C) 2024. In any type of usage of this code or released software, this notice shall be preserved without any changes.
 
 If you use this software for research purposes, please follow the instructions in the "Cite this repository" option from the side panel.
 
-This work has been developed within RoNaQCI, part of EuroQCI, DIGITAL-2021-QCI-01-DEPLOY-NATIONAL, 101091562.
+This work has been partly supported by RoNaQCI, part of EuroQCI, DIGITAL-2021-QCI-01-DEPLOY-NATIONAL, 101091562.
