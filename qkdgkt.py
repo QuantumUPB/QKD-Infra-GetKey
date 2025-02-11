@@ -11,6 +11,10 @@ import os
 import sys
 import requests
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 if not hasattr(sys, '_MEIPASS'):
     qkdgtk_module_dir = os.path.dirname(__file__)
 else:
@@ -39,11 +43,18 @@ def qkd_get_destinations():
     config = qkd_get_config()
     locations = config['locations']
     locations = [location['name'] for location in locations]
-    myself = config['myname']
+    myself = os.getenv("LOCATION")
     locations.remove(myself)
     return locations
 
 def qkd_get_key_custom_params(destination, source, cert_path, key_path, cacert_path, pem_password, type, id=""):    
+    proto = "https"
+    no_cert = False
+    if cert_path == "":
+        proto = "http"
+        no_cert = True
+        print("Warning: using an unsafe connection to the QKD, which might not work")
+
     if not os.path.isabs(cert_path):
         cert_path = get_full_path(cert_path)
     if not os.path.isabs(key_path):
@@ -52,19 +63,20 @@ def qkd_get_key_custom_params(destination, source, cert_path, key_path, cacert_p
         cacert_path = get_full_path(cacert_path)
 
     if type == 'Request':
-        url = f"https://{source}/api/v1/keys/{destination}/enc_keys"
+        url = f"{proto}://{source}/api/v1/keys/{destination}/enc_keys"
+
+        print(url)
 
         response = requests.get(
             url,
-            cert=(cert_path, key_path),
-            verify=False,
+            cert= None if no_cert else (cert_path, key_path),
+            verify=None if no_cert else False,
             headers={
                 'Content-Type': 'application/json'
             },
-            data=data_json if type == 'Response' else None
         )
     else:
-        url = f"https://{source}/api/v1/keys/{destination}/dec_keys"
+        url = f"{proto}://{source}/api/v1/keys/{destination}/dec_keys"
         data_payload = {
             "key_IDs": [
                 {
@@ -76,8 +88,8 @@ def qkd_get_key_custom_params(destination, source, cert_path, key_path, cacert_p
     
         response = requests.post(
             url,
-            cert=(cert_path, key_path),
-            verify=False,
+            cert= None if no_cert else (cert_path, key_path),
+            verify=None if no_cert else False,
             headers={
                 'Content-Type': 'application/json'
             },
@@ -90,6 +102,7 @@ def qkd_get_key_custom_params(destination, source, cert_path, key_path, cacert_p
     else:
         print(f"Error: {response.status_code}")
         print(response.text)
+        return "error: " + response.text
 
     # print(result)
     return result

@@ -18,6 +18,11 @@ from PyQt5.QtWidgets import QFrame
 from copy import deepcopy
 import qkdgkt
 
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
 LOCATION_NAMES = qkdgkt.qkd_get_location_names()
 LOCATIONS = qkdgkt.qkd_get_locations()
 
@@ -76,7 +81,7 @@ class MyApp(QWidget):
         # Dropdowns
         self.source_label = QLabel('Source:')
         self.source_dropdown = QComboBox()
-        self.source_dropdown.addItems(deepcopy(LOCATION_NAMES))
+        self.source_dropdown.addItem(os.getenv("LOCATION", "ADD_LOCATION"))
         self.source_dropdown.currentIndexChanged.connect(self.update_destination)
 
         self.destination_label = QLabel('Destination:')
@@ -200,7 +205,10 @@ class MyApp(QWidget):
         
     def get_source_endpoint(self):
         source = self.source_dropdown.currentText()
-        return next((loc['ipport'] for loc in LOCATIONS if loc['name'] == source), None)
+        source_base_url = next((loc['ipport'] for loc in LOCATIONS if loc['name'] == source), None)
+        if os.environ.get("ADD_KME", "") != "":
+            source_base_url += "/" + source + "/" + os.getenv("CONSUMER", "ADD_CONSUMER")
+        return source_base_url
 
     def submit_action(self):
         cert_path = self.cert_field.text()
