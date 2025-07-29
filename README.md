@@ -14,10 +14,16 @@
 
 In order to install:
  - The software is designed for Linux, but can also work on Windows via WSL (activate WSL if using Windows)
- - Install Python and PyQT5
- - Rename `config_sample.json` to `config.json` and edit your personal details if needed
- - Run `python qkdgkt_gui.py` to run the GUI
- - Use utility functions from `qkdgkt.py` for development
+- Install Python 3 and the packages from `requirements.txt` using `pip install -r requirements.txt`
+- Rename `config_sample.json` to `config.json` and edit your personal details if needed
+- Copy `.env.template` to `.env` and adjust the environment values
+- Ensure that the `LOCATION` variable in `.env` matches one of the names listed
+  in `config.json` (for example `Campus`)
+- If your self-reporting endpoint uses a self-signed TLS certificate, set
+  `REPORT_TRUST_SELF_SIGNED=true` in the `.env` file
+- To enable authenticated self-reporting, set `REPORT_TOKEN` in the `.env` file
+- Run `python qkdgkt_gui.py` to run the GUI
+- Use utility functions from `qkdgkt.py` for development
 
 # Usage
 

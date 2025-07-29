@@ -200,30 +200,29 @@ class MyApp(QWidget):
         self.destination_dropdown.addItems(options)
 
     def get_destination_endpoint(self):
-        destination = self.destination_dropdown.currentText()
-        return next((loc['endpoint'] for loc in LOCATIONS if loc['name'] == destination), None)
+        """Return the selected destination KME name."""
+        return self.destination_dropdown.currentText()
         
     def get_source_endpoint(self):
         source = self.source_dropdown.currentText()
-        source_base_url = next((loc['ipport'] for loc in LOCATIONS if loc['name'] == source), None)
-        if os.environ.get("ADD_KME", "") != "":
-            source_base_url += "/" + source + "/" + os.getenv("CONSUMER", "ADD_CONSUMER")
-        return source_base_url
+        return next((loc['ipport'] for loc in LOCATIONS if loc['name'] == source), None)
 
     def submit_action(self):
         cert_path = self.cert_field.text()
         key_path = self.key_field.text()
         cacert_path = self.cacert_field.text()
-        source = self.get_source_endpoint()
         destination = self.get_destination_endpoint()
-        pem_password = self.password_field.text()
+        source_ip = self.get_source_endpoint()
+        dest_ip = next((loc['ipport'] for loc in LOCATIONS if loc['name'] == destination), None)
         req_type = self.request_response_dropdown.currentText()
+        kme = source_ip if req_type == 'Request' else dest_ip
+        pem_password = self.password_field.text()
         id = self.id_field.text()
         
         if req_type == 'Request':
-            result = qkdgkt.qkd_get_key_custom_params(destination, source, cert_path, key_path, cacert_path, pem_password, 'Request')
+            result = qkdgkt.qkd_get_key_custom_params(destination, kme, cert_path, key_path, cacert_path, pem_password, 'Request')
         else:
-            result = qkdgkt.qkd_get_key_custom_params(destination, source, cert_path, key_path, cacert_path, pem_password, 'Response', id)
+            result = qkdgkt.qkd_get_key_custom_params(destination, kme, cert_path, key_path, cacert_path, pem_password, 'Response', id)
 
         self.result_textbox.setPlainText(result)
 
