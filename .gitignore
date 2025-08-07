@@ -1,7 +1,8 @@
 combined.pfx
+gkt.zip
 qkd-ca.crt
 qkd.key
 upb-ap.crt
 vmkey.txt
 __pycache__/
-config.json
+config.toml

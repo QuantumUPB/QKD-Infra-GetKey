@@ -1,0 +1,30 @@
+# Sample configuration for QKD Get Key Tool
+cert = "certs/qkd.crt"
+key = "certs/qkd.key"
+# Path to CA certificate (optional)
+# cacert = "qkd-ca.crt"
+pempassword = ""
+
+# (Optional) Consumer identifier used in requests
+consumer = ""
+
+# Name of this local KME location
+location = "UPB"
+
+# Self-reporting settings
+self_reporting = true
+report_endpoint = "http://127.0.0.1/update-app"
+report_token = "1234"
+report_trust_self_signed = true
+reporting_name = "gkt"
+
+# Known KME locations
+[[locations]]
+name = "IFIN"
+endpoint = "CONS_BUC_IFIN"
+
+[[locations]]
+name = "UPB"
+ipport = "127.0.0.1"
+endpoint = "CONS_BUC_UPB_LA3"
+

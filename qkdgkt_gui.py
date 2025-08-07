@@ -18,11 +18,6 @@ from PyQt5.QtWidgets import QFrame
 from copy import deepcopy
 import qkdgkt
 
-from dotenv import load_dotenv
-import os
-
-load_dotenv()
-
 LOCATION_NAMES = qkdgkt.qkd_get_location_names()
 LOCATIONS = qkdgkt.qkd_get_locations()
 
@@ -50,7 +45,7 @@ class MyApp(QWidget):
         self.key_button = QPushButton('Browse')
         self.key_button.clicked.connect(lambda: self.browse_file(self.key_field))
 
-        self.cacert_label = QLabel('CACert:')
+        self.cacert_label = QLabel('CACert (optional):')
         self.cacert_field = QLineEdit()
         self.cacert_button = QPushButton('Browse')
         self.cacert_button.clicked.connect(lambda: self.browse_file(self.cacert_field))
@@ -81,7 +76,7 @@ class MyApp(QWidget):
         # Dropdowns
         self.source_label = QLabel('Source:')
         self.source_dropdown = QComboBox()
-        self.source_dropdown.addItem(os.getenv("LOCATION", "ADD_LOCATION"))
+        self.source_dropdown.addItem(qkdgkt.qkd_get_config().get("location", "ADD_LOCATION"))
         self.source_dropdown.currentIndexChanged.connect(self.update_destination)
 
         self.destination_label = QLabel('Destination:')
@@ -205,7 +200,7 @@ class MyApp(QWidget):
         
     def get_source_endpoint(self):
         source = self.source_dropdown.currentText()
-        return next((loc['ipport'] for loc in LOCATIONS if loc['name'] == source), None)
+        return next((loc.get('ipport') for loc in LOCATIONS if loc['name'] == source), None)
 
     def submit_action(self):
         cert_path = self.cert_field.text()
@@ -213,9 +208,8 @@ class MyApp(QWidget):
         cacert_path = self.cacert_field.text()
         destination = self.get_destination_endpoint()
         source_ip = self.get_source_endpoint()
-        dest_ip = next((loc['ipport'] for loc in LOCATIONS if loc['name'] == destination), None)
         req_type = self.request_response_dropdown.currentText()
-        kme = source_ip if req_type == 'Request' else dest_ip
+        kme = source_ip
         pem_password = self.password_field.text()
         id = self.id_field.text()
         
