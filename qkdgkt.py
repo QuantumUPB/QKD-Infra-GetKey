@@ -11,9 +11,10 @@ import os
 import sys
 import requests
 
-from dotenv import load_dotenv
-
-load_dotenv()
+try:
+    import tomllib
+except ModuleNotFoundError:  # pragma: no cover
+    import tomli as tomllib
 
 if not hasattr(sys, '_MEIPASS'):
     qkdgtk_module_dir = os.path.dirname(__file__)
@@ -24,14 +25,19 @@ def get_full_path(relative_path):
     # if not inside pyinstaller bundle
     return os.path.join(qkdgtk_module_dir, relative_path)
 
+_CONFIG = None
+
+
 def qkd_get_config():
-    with open(get_full_path('config.json')) as f:
-        config = json.load(f)
-    return config
+    global _CONFIG
+    if _CONFIG is None:
+        with open(get_full_path('config.toml'), 'rb') as f:
+            _CONFIG = tomllib.load(f)
+    return _CONFIG
 
 def qkd_get_myself():
-    """Return the consumer name defined in the configuration."""
-    return qkd_get_config()['consumer']
+    """Return the consumer name defined in the configuration if present."""
+    return qkd_get_config().get('consumer')
 
 def qkd_get_locations():
     return qkd_get_config()['locations']
@@ -42,18 +48,29 @@ def qkd_get_location_names():
 
 def qkd_get_destinations():
     config = qkd_get_config()
-    locations = config['locations']
-    locations = [location['name'] for location in locations]
-    myself = os.getenv("LOCATION")
-    locations.remove(myself)
+    locations = [location['name'] for location in config['locations']]
+    myself = config.get("location")
+    if myself in locations:
+        locations.remove(myself)
     return locations
 
+def qkd_get_endpoint(destination):
+    """Return the SAE endpoint for a destination name.
+
+    Falls back to the destination name if no endpoint is defined.
+    """
+    for location in qkd_get_locations():
+        if location.get('name') == destination:
+            return location.get('endpoint', destination)
+    return destination
+
 def _self_report(node_id: str, name: str, number_of_keys: int, key_size: int = 256) -> None:
-    """Report key retrieval details if SELF_REPORTING is enabled."""
-    if os.getenv("SELF_REPORTING", "false").lower() != "true":
+    """Report key retrieval details if self-reporting is enabled."""
+    cfg = qkd_get_config()
+    if not cfg.get("self_reporting", False):
         return
 
-    endpoint = os.getenv("REPORT_ENDPOINT")
+    endpoint = cfg.get("report_endpoint")
     if not endpoint:
         return
 
@@ -64,11 +81,11 @@ def _self_report(node_id: str, name: str, number_of_keys: int, key_size: int = 2
         "keySize": key_size,
     }
 
-    token = os.getenv("REPORT_TOKEN")
+    token = cfg.get("report_token")
 
     try:
         verify_tls = True
-        if os.getenv("REPORT_TRUST_SELF_SIGNED", "false").lower() == "true":
+        if cfg.get("report_trust_self_signed", False):
             verify_tls = False
 
         headers = {"Content-Type": "application/json"}
@@ -86,8 +103,12 @@ def _self_report(node_id: str, name: str, number_of_keys: int, key_size: int = 2
     except Exception as exc:
         print(f"Reporting error: {exc}")
 
-def qkd_get_key_custom_params(destination, kme, cert_path, key_path, cacert_path, pem_password, type, id=""):
-    """Retrieve an encryption or decryption key from the specified KME."""
+def qkd_get_key_custom_params(destination, kme, cert_path, key_path, cacert_path=None, pem_password="", type="Request", id=""):
+    """Retrieve an encryption or decryption key from the specified KME.
+
+    If ``cacert_path`` is not provided, the request is made without setting a
+    custom CA certificate and TLS verification is disabled.
+    """
 
     proto = "https"
     no_cert = False
@@ -100,26 +121,29 @@ def qkd_get_key_custom_params(destination, kme, cert_path, key_path, cacert_path
         cert_path = get_full_path(cert_path)
     if not os.path.isabs(key_path):
         key_path = get_full_path(key_path)
-    if not os.path.isabs(cacert_path):
+    if cacert_path and not os.path.isabs(cacert_path):
         cacert_path = get_full_path(cacert_path)
 
     consumer = qkd_get_myself()
-    local_kme = os.getenv("LOCATION")
+
+    request_kme = kme
+
+    sae = qkd_get_endpoint(destination)
 
     if type == 'Request':
-        sae = f"{destination}-{consumer}"
-        request_kme = kme
-    else:
-        sae = f"{local_kme}-{consumer}"
-        request_kme = destination
-
-    if type == 'Request':
-        url = f"{proto}://{request_kme}/{local_kme}/{consumer}/api/v1/keys/{sae}/enc_keys"
+        if consumer:
+            url = f"{proto}://{request_kme}/{consumer}/api/v1/keys/{sae}/enc_keys"
+        else:
+            url = f"{proto}://{request_kme}/api/v1/keys/{sae}/enc_keys"
 
         curl_parts = ["curl", "-Ss"]
         if not no_cert:
             cert_arg = f"{cert_path}:{pem_password}" if pem_password else cert_path
-            curl_parts.extend(["--cert", cert_arg, "--key", key_path, "--cacert", cacert_path, "-k"])
+            curl_parts.extend(["--cert", cert_arg, "--key", key_path])
+            if cacert_path:
+                curl_parts.extend(["--cacert", cacert_path])
+            else:
+                curl_parts.append("-k")
         else:
             curl_parts.append("-k")
         curl_parts.append(url)
@@ -128,13 +152,16 @@ def qkd_get_key_custom_params(destination, kme, cert_path, key_path, cacert_path
         response = requests.get(
             url,
             cert=None if no_cert else (cert_path, key_path),
-            verify=None if no_cert else False,
+            verify=None if no_cert else (cacert_path or False),
             headers={
                 'Content-Type': 'application/json'
             },
         )
     else:
-        url = f"{proto}://{request_kme}/{destination}/{consumer}/api/v1/keys/{sae}/dec_keys"
+        if consumer:
+            url = f"{proto}://{request_kme}/{consumer}/api/v1/keys/{sae}/dec_keys"
+        else:
+            url = f"{proto}://{request_kme}/api/v1/keys/{sae}/dec_keys"
         data_payload = {
             "key_IDs": [
                 {
@@ -147,7 +174,11 @@ def qkd_get_key_custom_params(destination, kme, cert_path, key_path, cacert_path
         curl_parts = ["curl", "-Ss"]
         if not no_cert:
             cert_arg = f"{cert_path}:{pem_password}" if pem_password else cert_path
-            curl_parts.extend(["--cert", cert_arg, "--key", key_path, "--cacert", cacert_path, "-k"])
+            curl_parts.extend(["--cert", cert_arg, "--key", key_path])
+            if cacert_path:
+                curl_parts.extend(["--cacert", cacert_path])
+            else:
+                curl_parts.append("-k")
         else:
             curl_parts.append("-k")
         curl_parts.extend(["-X", "POST", "-H", "Content-Type:application/json", "-d", data_json, url])
@@ -156,7 +187,7 @@ def qkd_get_key_custom_params(destination, kme, cert_path, key_path, cacert_path
         response = requests.post(
             url,
             cert= None if no_cert else (cert_path, key_path),
-            verify=None if no_cert else False,
+            verify=None if no_cert else (cacert_path or False),
             headers={
                 'Content-Type': 'application/json'
             },
@@ -183,9 +214,10 @@ def qkd_get_key_custom_params(destination, kme, cert_path, key_path, cacert_path
         except Exception:
             pass
 
+        cfg = qkd_get_config()
         _self_report(
-            os.getenv("LOCATION", qkd_get_myself()),
-            os.getenv("REPORTING_NAME", "infra-getkey"),
+            cfg.get("location", qkd_get_myself()),
+            cfg.get("reporting_name", "infra-getkey"),
             int(number_of_keys) if number_of_keys else 0,
             int(key_size) if key_size else 0,
         )
@@ -202,19 +234,18 @@ def qkd_get_key_with_type(destination, type, id=""):
 
     locations = config['locations']
 
-    kme_name = os.getenv("LOCATION")
+    kme_name = qkd_get_config().get("location")
     assert kme_name in [location['name'] for location in locations], "Local KME not found in locations"
     assert destination in [location['name'] for location in locations], "Destination name not found in locations"
 
     kme_ipport = [location['ipport'] for location in locations if location['name'] == kme_name][0]
-    destination_ipport = [location['ipport'] for location in locations if location['name'] == destination][0]
 
     cert_path = config['cert']
     key_path = config['key']
-    cacert_path = config['cacert']
+    cacert_path = config.get('cacert')
     pem_password = config['pempassword']
 
-    request_kme = kme_ipport if type == 'Request' else destination_ipport
+    request_kme = kme_ipport
 
     return qkd_get_key_custom_params(destination, request_kme, cert_path, key_path, cacert_path, pem_password, type, id)
 
